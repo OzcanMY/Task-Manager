@@ -3,7 +3,8 @@ import os
 from datetime import datetime
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QPushButton, QWidget, QVBoxLayout, QLineEdit, QTextEdit, QGridLayout, \
-    QLabel, QHBoxLayout, QComboBox, QDateEdit, QTableWidget, QTableWidgetItem, QStyledItemDelegate, QHeaderView
+    QLabel, QHBoxLayout, QComboBox, QDateEdit, QTableWidget, QTableWidgetItem, QStyledItemDelegate, QHeaderView, \
+    QAbstractScrollArea
 
 
 class AlignDelegate(QStyledItemDelegate):
@@ -20,11 +21,10 @@ class Task:
         self.task_previs_finish_date = ""
         self.task_last_mod_date = ""
         self.task_priority_level = ""
-        self.task_description = ""
         self.task_hardware = ""
         self.task_status = ""
+        self.task_description = ""
         self.task_comment = ""
-        self.task_id = ""
         Task.task_inst_db.append(self)
 
 
@@ -44,11 +44,43 @@ class MainWindow(QWidget):
         self.show()
 
 
-class TaskBase(QWidget):
+class TaskBaseWindow(QWidget):
     def __init__(self):
         super().__init__()
+        self.setSizeAdjustPolicy(2)
         self.setWindowTitle("Base de missions")
+        self.layout = QVBoxLayout()
+        self.layout.addWidget(task_base)
+        self.layout.setSizeAdjustPolicy(2)
+        self.setLayout()
         self.show()
+    
+    def add_task_to_tb(self, task_base):
+        idx = task_base.rowCount()
+        task_base.insertRow(idx)
+        task_base.setHorizontalHeaderLabels(["Date ticket", "Date prévis", "Prio", "Statut", "Description", "Moyen",
+                                        "Commentaires"])
+        task_base.setAlternatingRowColors(True)
+        # task_base.setStyleSheet("background-color: red")
+        task_base.setItem(idx, 0, QTableWidgetItem(self.task_build_date))
+        task_base.setItem(idx, 1, QTableWidgetItem(self.task_previs_finish_date))
+        task_base.setItem(idx, 2, QTableWidgetItem(self.task_priority_level))
+        task_base.setItem(idx, 3, QTableWidgetItem(self.task_status))
+        task_base.setItem(idx, 4, QTableWidgetItem(self.task_description))
+        task_base.setItem(idx, 5, QTableWidgetItem(self.task_hardware))
+        task_button = QPushButton("Commentaires")
+        task_base.setCellWidget(idx, 6, task_button)
+        task_button.show()
+        task_base.resizeRowsToContents()
+        task_base.resizeColumnsToContents()
+        task_base.setSizeAdjustPolicy(2)    # Adjust window size to task_base's one. "2" : Adjust to content from Qt documentation
+        delegate = AlignDelegate(task_base)
+        task_base.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
+        task_base.setItemDelegateForColumn(0, delegate)
+        task_base.setItemDelegateForColumn(1, delegate)
+        task_base.setItemDelegateForColumn(2, delegate)
+        task_base.setItemDelegateForColumn(3, delegate)
+        task_base.show()
 
 
 class NewTaskWindow(QWidget):
@@ -111,50 +143,22 @@ class NewTaskWindow(QWidget):
         newTask.task_token = self.token
         newTask.task_build_date = self.de_build_date.text()
         newTask.task_previs_finish_date = self.de_previs_date.text()
+        newTask.task_last_mod_date = ""
+        newTask.task_priority_level = self.cb_prio_level.currentText()
+        newTask.task_hardware = self.t_hardware.text()
         newTask.task_status = self.cb_status.currentText()
         newTask.task_description = self.tb_description_box.toPlainText()
-        newTask.task_hardware = self.t_hardware.text()
-        newTask.task_priority_level = self.cb_prio_level.currentText()
         try:
             newTask.task_comment = comment
         except:
             newTask.task_comment = ""
-        add_task_to_tb(newTask)
+        TaskBaseWindow.add_task_to_tb(newTask, task_base)
         task_file = open("{}.task".format(self.token), "w")
-        task_file.write('{}\n{}\n{}\n{}'.format(newTask.task_token, newTask.task_build_date, 
-                                                newTask.task_previs_finish_date, newTask.task_description,))
-
-def new_task():
-    global w_new_task
-    w_new_task = NewTaskWindow()
-
-def add_task_to_tb(task):
-    global task_base
-    task_base = QTableWidget(3, 7)
-    task_base.setHorizontalHeaderLabels(["Date ticket", "Date prévis", "Prio", "Statut", "Description", "Moyen",
-                                     "Commentaires"])
-    task_base.setAlternatingRowColors(True)
-    # task_base.setStyleSheet("background-color: red")
-    task_base.setItem(0, 0, QTableWidgetItem(task.task_build_date))
-    task_base.setItem(0, 1, QTableWidgetItem(task.task_previs_finish_date))
-    task_base.setItem(0, 2, QTableWidgetItem(task.task_priority_level))
-    task_base.setItem(0, 3, QTableWidgetItem(task.task_status))
-    task_base.setItem(0, 4, QTableWidgetItem(task.task_description))
-    task_base.setItem(0, 5, QTableWidgetItem(task.task_hardware))
-    task_button = QPushButton("Commentaires")
-    task_base.setCellWidget(0, 6, task_button)
-    task_button.show()
-    task_base.resizeRowsToContents()
-    task_base.resizeColumnsToContents()
-    task_base.setSizeAdjustPolicy(2)    # Adjust window size to task_base's one. "2" : Adjust to content from Qt documentation
-    delegate = AlignDelegate(task_base)
-    task_base.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
-    task_base.setItemDelegateForColumn(0, delegate)
-    task_base.setItemDelegateForColumn(1, delegate)
-    task_base.setItemDelegateForColumn(2, delegate)
-    task_base.setItemDelegateForColumn(3, delegate)
-    # task_base_record = open("Task_base_record.txt", "w")
-    task_base.show()
+        task_file.write('{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n'
+                        .format(newTask.task_token, newTask.task_build_date, 
+                                newTask.task_previs_finish_date, newTask.task_last_mod_date,
+                                newTask.task_priority_level, newTask.task_hardware,
+                                newTask.task_status, newTask.task_description,))
 
 
 class NewCommentWindow(QWidget):
@@ -170,6 +174,7 @@ class NewCommentWindow(QWidget):
         self.l_layout.addWidget(self.b_validate)
         self.setLayout(self.l_layout)
         self.show()
+
 
 def load_task_db():
     os.chdir('db')
@@ -191,29 +196,35 @@ def load_task_db():
             read_task.task_comment              = task_file_content[8]
             read_task.task_id                   = task_file_content[9]
         except:
-            pass
+            continue
+
+def new_task():
+    global w_new_task
+    w_new_task = NewTaskWindow()
 
 def get_comment():
     global comment, w_comment
     comment = w_comment.tb_comment.toPlainText()
     w_comment.close()
 
-
 def add_a_comment():
     global w_comment, comment
     w_comment = NewCommentWindow()
 
-
 def show_task_base():
     # global w_task_base
-    # w_task_base = TaskBase()
+    # w_task_base = TaskBaseWindow()
     # if "task_base" in globals():
     for task in Task.task_inst_db:
-        add_task_to_tb(task)
+        TaskBaseWindow.add_task_to_tb(task, task_base)
+    task_base.resizeRowsToContents()
     task_base.show()
+
 
 load_task_db()
 app = QApplication(sys.argv)
+task_base = QTableWidget(0, 7)
+task_base.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
 fen = MainWindow()
 fen.show()
 app.exec_()
