@@ -1,4 +1,5 @@
 import sys
+import os
 from datetime import datetime
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QPushButton, QWidget, QVBoxLayout, QLineEdit, QTextEdit, QGridLayout, \
@@ -12,8 +13,10 @@ class AlignDelegate(QStyledItemDelegate):
 
 
 class Task:
+    task_inst_db = []
     def __init__(self):
-        self.task_building_date = ""
+        self.task_token = ""
+        self.task_build_date = ""
         self.task_previs_finish_date = ""
         self.task_last_mod_date = ""
         self.task_priority_level = ""
@@ -22,6 +25,7 @@ class Task:
         self.task_status = ""
         self.task_comment = ""
         self.task_id = ""
+        Task.task_inst_db.append(self)
 
 
 class MainWindow(QWidget):
@@ -40,11 +44,6 @@ class MainWindow(QWidget):
         self.show()
 
 
-def new_task():
-    global w_new_task
-    w_new_task = NewTaskWindow()
-
-
 class TaskBase(QWidget):
     def __init__(self):
         super().__init__()
@@ -56,6 +55,7 @@ class NewTaskWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Nouvelle mission")
+        self.token = self.generate_token()
         self.tb_description_box = QTextEdit()
         self.tb_description_box.setAcceptRichText(True)
         self.b_validate = QPushButton("Valider")
@@ -102,9 +102,14 @@ class NewTaskWindow(QWidget):
         self.setLayout(self.l_layout)
         self.show()
 
+    def generate_token(self):
+        nb_task_in_db = len(Task.task_inst_db)
+        return 'OY' + str(nb_task_in_db)
+
     def task_builder(self):
         newTask = Task()
-        newTask.task_building_date = self.de_build_date.text()
+        newTask.task_token = self.token
+        newTask.task_build_date = self.de_build_date.text()
         newTask.task_previs_finish_date = self.de_previs_date.text()
         newTask.task_status = self.cb_status.currentText()
         newTask.task_description = self.tb_description_box.toPlainText()
@@ -115,7 +120,13 @@ class NewTaskWindow(QWidget):
         except:
             newTask.task_comment = ""
         add_task_to_tb(newTask)
+        task_file = open("{}.task".format(self.token), "w")
+        task_file.write('{}\n{}\n{}\n{}'.format(newTask.task_token, newTask.task_build_date, 
+                                                newTask.task_previs_finish_date, newTask.task_description,))
 
+def new_task():
+    global w_new_task
+    w_new_task = NewTaskWindow()
 
 def add_task_to_tb(task):
     global task_base
@@ -124,13 +135,15 @@ def add_task_to_tb(task):
                                      "Commentaires"])
     task_base.setAlternatingRowColors(True)
     # task_base.setStyleSheet("background-color: red")
-    task_base.setItem(0, 0, QTableWidgetItem(task.task_building_date))
+    task_base.setItem(0, 0, QTableWidgetItem(task.task_build_date))
     task_base.setItem(0, 1, QTableWidgetItem(task.task_previs_finish_date))
     task_base.setItem(0, 2, QTableWidgetItem(task.task_priority_level))
     task_base.setItem(0, 3, QTableWidgetItem(task.task_status))
     task_base.setItem(0, 4, QTableWidgetItem(task.task_description))
     task_base.setItem(0, 5, QTableWidgetItem(task.task_hardware))
-    task_base.setItem(0, 6, QTableWidgetItem(task.task_comment))
+    task_button = QPushButton("Commentaires")
+    task_base.setCellWidget(0, 6, task_button)
+    task_button.show()
     task_base.resizeRowsToContents()
     task_base.resizeColumnsToContents()
     task_base.setSizeAdjustPolicy(2)    # Adjust window size to task_base's one. "2" : Adjust to content from Qt documentation
@@ -140,11 +153,11 @@ def add_task_to_tb(task):
     task_base.setItemDelegateForColumn(1, delegate)
     task_base.setItemDelegateForColumn(2, delegate)
     task_base.setItemDelegateForColumn(3, delegate)
-    task_base_record = open("Task_base_record.txt", "w")
+    # task_base_record = open("Task_base_record.txt", "w")
     task_base.show()
 
 
-class CommentWindow(QWidget):
+class NewCommentWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setMinimumWidth(330)
@@ -158,6 +171,27 @@ class CommentWindow(QWidget):
         self.setLayout(self.l_layout)
         self.show()
 
+def load_task_db():
+    os.chdir('db')
+    task_list = os.listdir()
+    nb_task_in_db = len(os.listdir())
+    for task_file in task_list:
+        read_task = Task()
+        task_file = open(task_file, 'r')
+        task_file_content = task_file.read().split('\n')
+        try:
+            read_task.task_token                = task_file_content[0]
+            read_task.task_build_date           = task_file_content[1]
+            read_task.task_previs_finish_date   = task_file_content[2]
+            read_task.task_last_mod_date        = task_file_content[3]
+            read_task.task_priority_level       = task_file_content[4]
+            read_task.task_description          = task_file_content[5]
+            read_task.task_hardware             = task_file_content[6]
+            read_task.task_status               = task_file_content[7]
+            read_task.task_comment              = task_file_content[8]
+            read_task.task_id                   = task_file_content[9]
+        except:
+            pass
 
 def get_comment():
     global comment, w_comment
@@ -167,16 +201,18 @@ def get_comment():
 
 def add_a_comment():
     global w_comment, comment
-    w_comment = CommentWindow()
+    w_comment = NewCommentWindow()
 
 
 def show_task_base():
     # global w_task_base
     # w_task_base = TaskBase()
-    if "task_base" in globals():
-        task_base.show()
+    # if "task_base" in globals():
+    for task in Task.task_inst_db:
+        add_task_to_tb(task)
+    task_base.show()
 
-
+load_task_db()
 app = QApplication(sys.argv)
 fen = MainWindow()
 fen.show()
