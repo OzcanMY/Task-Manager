@@ -71,16 +71,15 @@ class TaskBaseWindow(QWidget):
         task_button = QPushButton("Commentaires")
         task_base.setCellWidget(idx, 6, task_button)
         task_button.show()
-        task_base.resizeRowsToContents()
-        task_base.resizeColumnsToContents()
-        task_base.setSizeAdjustPolicy(2)    # Adjust window size to task_base's one. "2" : Adjust to content from Qt documentation
-        delegate = AlignDelegate(task_base)
-        task_base.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
-        task_base.setItemDelegateForColumn(0, delegate)
-        task_base.setItemDelegateForColumn(1, delegate)
-        task_base.setItemDelegateForColumn(2, delegate)
-        task_base.setItemDelegateForColumn(3, delegate)
-        task_base.show()
+        # task_base.resizeRowsToContents()
+        # task_base.resizeColumnsToContents()
+        # task_base.setSizeAdjustPolicy(2)    # Adjust window size to task_base's one. "2" : Adjust to content from Qt documentation
+        # delegate = AlignDelegate(task_base)
+        # task_base.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
+        # task_base.setItemDelegateForColumn(0, delegate)
+        # task_base.setItemDelegateForColumn(1, delegate)
+        # task_base.setItemDelegateForColumn(2, delegate)
+        # task_base.setItemDelegateForColumn(3, delegate)
 
 
 class NewTaskWindow(QWidget):
@@ -159,6 +158,7 @@ class NewTaskWindow(QWidget):
                                 newTask.task_previs_finish_date, newTask.task_last_mod_date,
                                 newTask.task_priority_level, newTask.task_hardware,
                                 newTask.task_status, newTask.task_description,))
+        show_task_base()
 
 
 class NewCommentWindow(QWidget):
@@ -215,9 +215,10 @@ def show_task_base():
     # global w_task_base
     # w_task_base = TaskBaseWindow()
     # if "task_base" in globals():
+    task_base.setRowCount(0)
     for task in Task.task_inst_db:
         TaskBaseWindow.add_task_to_tb(task, task_base)
-    task_base.resizeRowsToContents()
+    task_base.adjustSize()
     task_base.show()
 
 
