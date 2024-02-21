@@ -51,7 +51,6 @@ class TaskBaseWindow(QWidget):
         self.setWindowTitle("Base de missions")
         self.layout = QVBoxLayout()
         self.layout.addWidget(task_base)
-        self.layout.setSizeAdjustPolicy(2)
         self.setLayout()
         self.show()
     
@@ -212,9 +211,6 @@ def add_a_comment():
     w_comment = NewCommentWindow()
 
 def show_task_base():
-    # global w_task_base
-    # w_task_base = TaskBaseWindow()
-    # if "task_base" in globals():
     task_base.setRowCount(0)
     for task in Task.task_inst_db:
         TaskBaseWindow.add_task_to_tb(task, task_base)
