@@ -21,6 +21,10 @@ class Task:
         self.task_comment = list()
         Task.task_inst_db.append(self)
 
+    def generate_token(self):
+        nb_task_in_db = len(Task.task_inst_db)
+        self.task_token = 'OY' + str(nb_task_in_db)
+
     def add_comment_to_task(self, content):
         self.comment.append(TaskComment(content))
 
@@ -70,6 +74,7 @@ class TaskBase(QWidget):
 
     def add_new_row(self):
         task = Task()
+        task.task_token = task.
         task.task_build_date = datetime.today().strftime('%d/%m/%Y')
         idx = self.table.rowCount()
         self.table.insertRow(idx)
@@ -80,82 +85,6 @@ class TaskBase(QWidget):
 
     def show_task_base(self):
         self.show()
-
-class NewTaskWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.task = Task()
-        self.setWindowTitle("Nouvelle mission")
-        self.token = self.generate_token()
-        self.tb_description_box = QTextEdit()
-        self.tb_description_box.setAcceptRichText(True)
-        self.b_validate = QPushButton("Valider")
-        self.b_validate.clicked.connect(self.task_builder)
-        self.lb_build_date = QLabel("Date du ticket")
-        self.de_build_date = QLabel(datetime.today().strftime('%d/%m/%Y'))
-        self.lb_status = QLabel("Statut")
-        self.cb_status = QComboBox()
-        self.cb_status.addItem("TBD")
-        self.cb_status.addItem("ON")
-        self.lb_previs_date = QLabel("Date de fin prévisionnelle")
-        self.de_previs_date = QDateEdit(calendarPopup=True)
-        self.de_previs_date.setDateTime(datetime.today())
-        self.lb_prio_level = QLabel("Priorité")
-        self.cb_prio_level = QComboBox()
-        self.cb_prio_level.addItem("U")
-        self.cb_prio_level.addItem("A")
-        self.lb_hardware = QLabel("Moyen")
-        self.t_hardware = QLineEdit()
-        self.b_add_comment = QPushButton("Ajouter un commentaire")
-
-        self.l_left_layout = QVBoxLayout()
-        self.l_left_layout.addWidget(self.tb_description_box)
-        self.l_left_layout.addWidget(self.b_validate)
-        self.l_right_layout = QVBoxLayout()
-        self.l_right_layout.addWidget(self.lb_build_date)
-        self.l_right_layout.addWidget(self.de_build_date)
-        self.l_right_layout.addWidget(self.lb_status)
-        self.l_right_layout.addWidget(self.cb_status)
-        self.l_right_layout.addWidget(self.lb_previs_date)
-        self.l_right_layout.addWidget(self.de_previs_date)
-        self.l_right_layout.addWidget(self.lb_prio_level)
-        self.l_right_layout.addWidget(self.cb_prio_level)
-        self.l_right_layout.addWidget(self.lb_hardware)
-        self.l_right_layout.addWidget(self.t_hardware)
-        self.l_right_layout.addWidget(self.b_add_comment)
-        self.l_right_layout.addStretch()
-        self.l_pseudo_widget = QWidget()
-        self.l_pseudo_widget.setLayout(self.l_right_layout)
-        self.l_pseudo_widget.setMaximumWidth(200)
-        self.l_layout = QHBoxLayout()
-        self.l_layout.addLayout(self.l_left_layout)
-        self.l_layout.addWidget(self.l_pseudo_widget)
-        self.setLayout(self.l_layout)
-        self.show()
-
-    def generate_token(self):
-        nb_task_in_db = len(Task.task_inst_db)
-        return 'OY' + str(nb_task_in_db)
-
-    def task_builder(self):
-        newTask = Task()
-        newTask.task_token = self.token
-        newTask.task_build_date = self.de_build_date.text()
-        newTask.task_previs_finish_date = self.de_previs_date.text()
-        newTask.task_last_mod_date = ""
-        newTask.task_priority_level = self.cb_prio_level.currentText()
-        newTask.task_hardware = self.t_hardware.text()
-        newTask.task_status = self.cb_status.currentText()
-        newTask.task_description = self.tb_description_box.toPlainText()
-
-        TaskBase.add_task_to_tb(self, newTask)
-        task_file = open("{}.task".format(self.token), "w")
-        task_file.write('{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n'
-                        .format(newTask.task_token, newTask.task_build_date, 
-                                newTask.task_previs_finish_date, newTask.task_last_mod_date,
-                                newTask.task_priority_level, newTask.task_hardware,
-                                newTask.task_status, newTask.task_description,))
-        TaskBase.show()
 
 
 class CommentWindow(QWidget):
@@ -200,10 +129,6 @@ def load_task_db():
             read_task.task_id                   = task_file_content[9]
         except:
             continue
-
-def new_task():
-    global w_new_task
-    w_new_task = NewTaskWindow()
 
 
 load_task_db()
