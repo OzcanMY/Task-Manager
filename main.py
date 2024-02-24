@@ -26,16 +26,45 @@ class Task:
     def generate_token(self):
         nb_task_in_db = len(Task.task_inst_db)
         return 'OY' + str(nb_task_in_db)
+    
+    def add_description(self, description):
+        des = ""
+        for line in description:
+            des = des + line
+        self.task_description = des
+    
+    def add_comment(self, comment):
+        # com = ""
+        # for line in comment:
+        #     com = com + line
+        self.add_comment_to_task(comment)
 
     def add_comment_to_task(self, content):
-        self.comment.append(TaskComment(content))
+        for idx, line in enumerate(content):
+            if line == '[com]':
+                idx_start = idx
+            if line == '[/com]':
+                split_content = content[idx_start + 1: idx]
+                com = TaskComment(split_content, True)
+                self.task_comment.append(com)
 
 
 class TaskComment:
-    def __init__(self, content=""):
+    def __init__(self, content="", read=False):
         self.build_date = datetime.today().strftime('%d/%m/%Y')
         self.content = content
         self.number = ""
+        if read:
+            self.decode_read_comment()
+    
+    def decode_read_comment(self):
+        for i, line in enumerate(self.content):
+            if line[0] == '#':
+                content = ""
+                self.build_date = line[1:]
+                continue
+            content = content + line
+        self.content = content
 
 
 class TaskBase(QWidget):
@@ -182,10 +211,10 @@ class CommentWindow(QWidget):
 
     def display_existing_comments(self):
         for idx, elt in enumerate(self.task.task_comment):
-            self.table.insertRow(idx + 1)
-            self.table.setItem(idx + 1, 0, QTableWidgetItem(self.task.task_comment[idx].build_date))
-            self.table.setItem(idx + 1, 1, QTableWidgetItem(self.task.task_comment[idx].content))
-            self.table.setItem(idx + 1, 2, QTableWidgetItem(self.task.task_comment[idx].number))
+            self.table.insertRow(idx)
+            self.table.setItem(idx, 0, QTableWidgetItem(self.task.task_comment[idx].build_date))
+            self.table.setItem(idx, 1, QTableWidgetItem(self.task.task_comment[idx].content))
+            self.table.setItem(idx, 2, QTableWidgetItem(self.task.task_comment[idx].number))
         self.pb_add_comment = QPushButton('Add comment')
         self.pb_add_comment.clicked.connect(self.open_new_comment_window)
         self.layout.addWidget(self.pb_add_comment)
@@ -251,23 +280,24 @@ def load_task_db():
         read_task = Task()
         task_file = open(task_file, 'r')
         task_file_content = task_file.read().split('\n')
+        idx_des_end = [idx for idx, line in enumerate(task_file_content) if line == '[/des]'][0]
         try:
             read_task.task_token                = task_file_content[0]
             read_task.task_build_date           = task_file_content[1]
             read_task.task_previs_finish_date   = task_file_content[2]
             read_task.task_last_mod_date        = task_file_content[3]
             read_task.task_priority_level       = task_file_content[4]
-            read_task.task_description          = task_file_content[5]
-            read_task.task_hardware             = task_file_content[6]
-            read_task.task_status               = task_file_content[7]
-            read_task.task_comment              = task_file_content[8]
+            read_task.add_description(task_file_content[6:idx_des_end])
+            read_task.task_hardware             = task_file_content[idx_des_end + 1]
+            read_task.task_status               = task_file_content[idx_des_end + 2]
+            read_task.add_comment(task_file_content[idx_des_end + 4:])
         except:
             continue
 
 def save_task(task):
     # os.chdir('db')
     file = open('ozy_{}.task'.format(task.task_token), 'w')
-    file.write('{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}'.format(
+    file.write('{}\n{}\n{}\n{}\n{}\n[des]\n{}\n[/des]\n{}\n{}'.format(
                 task.task_token,             
                 task.task_build_date,        
                 task.task_previs_finish_date,
@@ -304,7 +334,7 @@ def add_comment(task, comment):
     cb.table.setItem(idx, 2, QTableWidgetItem(comment.number))
     cb.adjustSize()
     file = open('ozy_{}.task'.format(task.task_token), 'a')
-    file.write('{}\n{}\n'.format(comment.build_date, comment.content))
+    file.write('[com]\n#{}\n{}\n[/com]\n'.format(comment.build_date, comment.content))
 
 load_task_db()
 app = QApplication(sys.argv)
